@@ -1,153 +1,68 @@
-# English to ASL converter
+# English to ASL
 
-A real-time English to American Sign Language (ASL) translation system that converts English text input into ASL video sequences using Large Language Models and computer vision.
+An interactive English to American Sign Language (ASL) translator. A local LLM converts an English sentence into ASL gloss tokens, each token is matched to a recorded sign video, and OpenCV plays the clips in sequence. When no exact clip exists, spaCy word-vector similarity picks the closest available sign. Everything runs on your machine.
 
-## 🚀 Features
+This repository is the English-to-ASL video prototype. The IEEE ICCCNT 2024 paper "American Sign Language Alphabet Recognition Using Teachable Machine" is a separate project (alphabet recognition from camera input) and its code is not in this repo.
 
-- **Real-time Translation**: Converts English sentences to ASL tokens using LLM
-- **Video Playback**: Plays corresponding ASL video demonstrations in sequence
-- **Similarity Search**: Falls back to similar ASL signs when exact matches aren't available
-- **User-friendly Interface**: Simple GUI for text input and video playback
-- **Comprehensive Vocabulary**: Supports 1500+ ASL signs and phrases
+## How it works
 
-## 🛠️ Technologies used
-- Python
-- OpenCV
-- Llama 2 7b LLM
-- Ollama
-- LM Studio
-- PySimpleGUI
-- spaCy (for similarity search)
-- OpenAI API (local server)
+1. **Input.** A PySimpleGUI window takes an English sentence.
+2. **Gloss tokens.** The sentence and a few-shot prompt go to a local LLM served by LM Studio on port 1234. Llama 2 7B was the model when this was built; any chat model behind LM Studio's OpenAI-compatible endpoint works.
+3. **Playback.** Each token maps to `src/Videos/<token>.mp4` and OpenCV plays the clips in order. Press `q` during a clip to skip to the next one.
+4. **Fallback.** If a token has no clip, `similarity.py` uses spaCy `en_core_web_md` vectors to pick the nearest available sign above a 0.5 similarity threshold.
 
-## 📋 Prerequisites
+## Requirements
 
-Before running this application, ensure you have:
+- Python 3.8+
+- [LM Studio](https://lmstudio.ai/) with a chat model loaded and its local server running on `http://localhost:1234`
+- spaCy English model: `python -m spacy download en_core_web_md`
 
-1. **Python 3.7+** installed
-2. **LM Studio** running locally on port 1234 with a compatible LLM model
-3. **spaCy English model** installed: `python -m spacy download en_core_web_md`
+## Setup
 
-## 🔧 Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone <repository-url>
-   cd english-asl
-   ```
-
-2. **Install required dependencies**:
-   ```bash
-   pip install opencv-python PySimpleGUI numpy openai spacy
-   ```
-
-3. **Download spaCy model**:
-   ```bash
-   python -m spacy download en_core_web_md
-   ```
-
-4. **Set up LM Studio**:
-   - Download and install [LM Studio](https://lmstudio.ai/)
-   - Load a compatible LLM model (Llama 2 7B recommended)
-   - Start the local server on port 1234
-
-## 🎯 Usage
-
-1. **Start the application**:
-   ```bash
-   cd src
-   python videoPlayer.py
-   ```
-
-2. **Enter English text** in the input field
-
-3. **Click "Play Videos"** to see the ASL translation
-
-4. **Press 'q'** during video playback to skip to the next sign
-
-## 🏗️ Project Structure
-
-```
-english-asl/
-├── src/                    # Main application code
-│   ├── videoPlayer.py      # Main application entry point
-│   ├── APICall.py          # LLM API integration
-│   ├── similarity.py       # Similarity search functionality
-│   └── Videos/             # ASL video database (1500+ videos)
-├── helpers/                # Utility functions and test files
-├── EnglishToASLDocs/       # Documentation and prompts
-├── misc/                   # Additional resources
-└── README.md              # This file
+```bash
+git clone https://github.com/Nishanth-G-Palaniswami/english-to-asl.git
+cd english-to-asl
+pip install opencv-python PySimpleGUI numpy openai spacy
+python -m spacy download en_core_web_md
 ```
 
-## 🔍 How It Works
+## Run
 
-### 1. Text Input Processing
-- User enters English text through PySimpleGUI interface
-- Text is sent to the LLM for tokenization
-
-### 2. LLM Tokenization
-- Uses a custom prompt to convert English sentences to ASL tokens
-- Maintains context and meaning while generating appropriate ASL signs
-- Returns comma-separated list of ASL tokens
-
-### 3. Video Sequence Generation
-- Each token is mapped to a corresponding video file
-- Videos are played in sequence to demonstrate the complete ASL translation
-
-### 4. Fallback Mechanism
-- If exact video match isn't found, similarity search is used
-- spaCy's word embeddings find the most similar available ASL sign
-- Confidence threshold of 0.5 ensures quality matches
-
-## 📝 About the technologies
-
-### OpenCV
-OpenCV is a popular open-source computer vision and machine learning software library. It offers various tools and algorithms for image and video analysis, including object detection, tracking, and recognition.
-
-### Llama 2 7b
-The LLM developed by Meta, it is primarily a chat based language model with 7 billion parameters. We are using a custom prompt to make it generate the desired results.
-
-### Ollama
-Provides interfaces and capabilities to run LLM locally.
-
-### LM Studio
-A tool used to run LLMs on consumer hardware. It can be used to chat with any opensource models available. It can also run a HTTP server for the models. Clients can send HTTP request and it can respond with the generated text. It leverages Ollama to do the same.
-
-## 🔧 Functions present
-
-```python
-def main():
+```bash
+cd src
+python videoPlayer.py
 ```
- The entrypoint into the Application
 
-```python
-def getInput() -> str:
+Type a sentence, click **Play Videos**, and the signs play in sequence.
+
+## Vocabulary
+
+About 2,000 sign clips live under `src/Videos/`, one per gloss token and named by the token (for example `thank you.mp4`, `hot dog.mp4`). The filenames are the vocabulary; list the folder to see it.
+
+## Layout
+
 ```
-Uses PySimpleGUI. A simple window with a text field and 2 buttons, Play and Exit is displyed. The user enters the input and this function returns the string
-
-```python
-def Sequence(inp : list, action : str) -> None:
+src/
+  videoPlayer.py     entry point: GUI, token sequencing, OpenCV playback
+  APICall.py         LLM request with the few-shot prompt
+  similarity.py      spaCy similarity fallback
+  Videos/            sign clips
+helpers/             scratch scripts and tests
+EnglishToASLDocs/    prompt notes
 ```
-Takes 2 inputs, the list of ASL tokens generated by the  and the original input. The tokens are converted into file names and the corresponding videos are played by calling `playVideo()`
 
-```python
-def playVideo(inputFile : str, action : str) -> None:
-```
-Uses OpenCV to play the video from the *Video* folder
+## Functions
 
-```python
-def APICall(QUERY : str) -> list:
-```
-Sends a request to the LLM with the *PROMPT* and *QUERY*. It gets back a comma separated string of tokens for the provided *QUERY*. Returns a list of tokens that the LLM generates for the given *QUERY*.
+- `main()`: entry point.
+- `getInput() -> str`: PySimpleGUI window with a text field and Play / Exit buttons; returns the sentence.
+- `Sequence(inp: list, action: str) -> None`: maps tokens to filenames and calls `playVideo()` for each.
+- `playVideo(inputFile: str, action: str) -> None`: plays one clip from `Videos/` with OpenCV.
+- `APICall(QUERY: str) -> list`: sends the prompt and query to the LLM, returns the token list.
+- `similaritySearch(token: str) -> list`: spaCy similarity search, returns `[TOKEN, SCORE, INDEX]` candidates.
 
-```python
-def similaritySearch(token : str)-> list:
-```
-Accepts a string and performs similarity search using spacy. Returns a list of ` [TOKEN, SCORE, INDEX] `
+## Prompt
 
-## 🎯 PROMPT
-The following string is provided as a prompt.
+The LLM receives this system prompt, verbatim:
 
 ```plaintext
 You are a helper that converts English words into ASL tokens.
@@ -186,63 +101,26 @@ output : "I, love, car, race"
 Using the above examples as reference maintian the meaning and context of the sentence, for any given user input generate the ASL Tokens ONLY separated by commas.
 ```
 
-## 🔍 QUERY
-The following string is used as the QUERY to the LLM
+Followed by the query:
 
 ```plaintext
 input text is " {USER_INPUT} "
 convert this into ASL tokens
 ```
 
-## 📚 Libraries required
-- OpenCV
-- PySimpleGUI
-- Numpy
-- openai
-- spacy
+## Limitations
 
-## 🎬 List of available actions
+- Gloss generation is prompt-driven. Word order and dropped function words follow the few-shot examples, not a grammar model, so output quality varies with the LLM.
+- The similarity fallback is approximate and can choose a semantically near but wrong sign.
+- Playback is sequential clip concatenation, not continuous signing.
+- This is an educational prototype, not a substitute for a certified interpreter.
 
-The system supports over 1500 ASL signs including:
+## Troubleshooting
 
-```
-someone, india, corner, piece, excuse, february, reveal, nineteen, overlook, eyes, strawberry, settle, accept, tournament, network, toilet, leaf, swallow, release, surrender, director, lunch, borrow, thrill, wedding, dissolve, write, thank you, sick, cabbage, grab, fox, neck, wrench, stare, gymnastics, maybe, sun, soon, which, v, how, legal, a, sandwich, identify, star, retreat, really, answer, guitar, form, art, lucky, politics, weigh, telephone, stairs, rest, autumn, chance, bible, heaven, satisfy, rather, celebrate, finally, hurry, protect, voice, teach, breakfast, past, far, general, karate, tale, w, catholic, warn, squeeze, disgusted, ocean, both, love, my, truck, sure, afraid, lettuce, through, swim, way, girlfriend, fourth, bus, rope, federal, operate, prefer, kick, about, engineer, plate, glass, egg, notice, name, moose, brave, line, museum, describe, skeleton, interpret, more, stress, brown, feel, agreement, farmer, woman, bicycle, else, eternity, most, secret, their, gang, fight, necklace, busy, knife, adjust, shovel, advanced, idea, bye, topic, single, turn, pull, geometry, tiptoe, precipitation, adapt, evidence, pencil, some, cruel, congratulations, wash, hot, u, computer, flexible, always, b, italy, snowman, tie, underwear, discuss, judge, monkey, nephew, hard, bank, loan, secretary, nice, happen, pain, invest, common, ridiculous, ride, government, intersection, giraffe, dad, dull, next, possible, to, defeat, miss, break, hammer, bone, pennsylvania, page, soap, wash face, problem, pizza, bacon, seven, warm, iron, magazine, large, t, while, behavior, objective, experiment, smell, anyway, or, around, danger, try, kitchen, fruit, bright, pet, spill, wander, highway, honor, cooperate, impossible, consider, program, pay attention, patient, open, education, bug, adult, lead, dangerous, philadelphia, banana, shine, measure, lemon, elementary, symbol, none, wheelchair, cough, small, vacation, florida, culture, dancer, thirsty, leave, environment, myself, cost, furniture, kid, image, adjective, first, nun, compare, wife, popular, consume, text, but, child, beautiful, snake, ireland, somewhere, bear, surgery, rescue, hide, now, garage, here, tissue, easter, vague, decorate, near, lazy, start, due, duty, pass, g, late, p, wonderful, strange, fork, april, monster, right, japan, deodorant, father, front, international, scan, gather, favorite, honest, toast, don't want, save, smile, should, siren, shoot, staff, lamp, june, wait, sunset, emotion, humble, praise, rainbow, texas, vampire, january, example, soup, pregnant, shame, age, demand, q, hop, appropriate, tolerate, f, fat, mexico, stitch, finance, cousin, people, active, involve, something, crocodile, close, pants, high, berry, belt, purple, linguistics, subtract, forever, process, welcome, pie, bookshelf, tuesday, glasses, live, peel, awake, red, congress, goat, full, skirt, spray, rain, last year, button, instead, below, peanut butter, rage, player, great, english, attract, copy, hot dog, gold, skunk, fish, free, aware, dorm, golf, professional, biology, third, christmas, boy, christ, table, vice president, send, cemetery, caption, hunt, bar, period, agenda, bush, forbid, article, sell, arrogant, ice cream, valley, pig, author, picture, erase, chat, shampoo, pride, classroom, not, within, swimsuit, odd, dress, meaning, magic, coach, heavy, this, represent, d, conflict, part, fake, printer, camera, dye, escape, s, feedback, convert, sour, publish, death, hope, long, baby, much, meet, peaceful, principle, sunshine, benefit, skinny, battle, july, animal, say, night, fast, hang up, odor, tea, beard, white, gloves, chocolate, exaggerate, bald, familiar, what, united states, brochure, we, back, breathe, revenge, president, nine, audiologist, cute, egypt, story, clueless, basic, police, parallel, r, fail, willing, divorce, theater, e, word, religion, aim, kindergarten, counselor, crave, plan, steel, counsel, positive, pumpkin, middle, play, jail, crown, report, torture, square, stepfather, percent, peace, contract, interpreter, worthless, shelf, headache, auction, wow, encourage, monday, speech, rake, scold, bad, physician, precious, chemical, themselves, alligator, commute, economy, under, hawaii, box, earthquake, rehearse, contest, message, award, trade, alphabet, take up, hanukkah, quick, lip, math, archery, dormitory, simple, ear, swimming, august, done, exhibit, insect, grandfather, kiss, cold, worker, elevator, coat, bull, company, score, princess, snack, thick, special, laundry, college, airplane, any, food, calculator, breeze, interrupt, hit, must, beginning, psychology, resign, go, lawyer, evening, hungry, lonely, eight, dive, sit, ring, without, total, choice, negative, strong, other, squirrel, drop, cat, deny, interview, tan, nurse, sew, pause, nation, march, military, want, sea, hate, walk, november, spanish, concentrate, negotiate, afternoon, shoes, vocabulary, private, careless, motorcycle, office, soft, chair, refuse, mention, opinion, cheese, germany, compete, balance, organize, dice, window, quote, structure, waterfall, character, cup, personality, graduate, viewpoint, friendly, license, read, parade, annoy, enter, every monday, boxing, braid, silver, clean, doll, better, babysitter, drama, visualize, stubborn, obsess, sweep, date, help, click, blend, misunderstand, amputate, green, reject, balloon, replace, tomorrow, funny, rob, fear, customer, audiology, roof, climb, student, agree, surprise, perspective, light, from now on, fine, cook, weight, keep, wrap, bra, pray, run, prevent, tower, affect, orange, print, moon, sleepy, ill, vomit, waiter, gas, fix, comfortable, manage, disgust, heart, holy, sofa, cherry, mustache, dismiss, technology, quarter, stamp, blanket, mean, bully, wolf, take turns, lady, retire, poverty, pepper, watermelon, rush, hockey, mirror, specific, bake, when, grass, building, scientist, discipline, ski, concern, high school, apostrophe, spirit, faculty, smooth, top, thankful, she, anniversary, man, tease, earn, thursday, grapes, summon, verb, birth, expert, realize, actor, mouse, again, eyeglasses, screwdriver, if, statistics, anatomy, apple, request, test, candidate, minus, price, comb, blow, canoe, left, reputation, pity, responsibility, birthday, weak, slice, find, educate, lie, sculpture, not yet, grateful, accident, cards, project, history, except, upstairs, alarm, angry, damage, binoculars, canada, heap, champion, flood, learn, jewish, electricity, eat, french fries, buffalo, heart attack, push, normal, sting, until, flower, best, dawn, rooster, america, bored, superman, forget, new, insurance, little bit, detach, profit, crash, famous, tutor, calm, respect, eye, local, gossip, debate, share, choke, second, expensive, cover, baseball, together, spain, conversation, take, artist, easy, accountant, visit, become, society, husband, tender, firefighter, melody, car, owe, drive, robber, gift, wall, clock, trust, command, look at, thailand, diamond, exercise, ugly, napkin, straight, diaper, crab, helmet, basketball, poop, deaf, pack, concept, his, than, barely, sketch, graduation, last, fancy, quality, clown, rude, separate, tired, grey, your, france, language, cafeteria, confront, spin, challenge, call, sensitive, wet, electrician, salad, hill, human, sweater, broke, think, last week, finish, curriculum, descend, match, mainstream, convince, phone, football, let, floor, skin, deduct, strict, color, thousand, construct, head, five, still, haircut, sweet, frog, trip, laptop, israel, league, count, come, pear, december, develop, cross, university, believe, austria, caterpillar, mock, purpose, sausage, accent, carry, cut, niece, devil, inform, cloud, daughter, her, worry, geography, prison, permit, belief, disappear, infection, boast, center, dead, tempt, demonstrate, postpone, sky, tooth, poor, prove, manager, mountain, fault, innocent, see, weekend, knock, business, refer, traffic, cent, remove, painter, referee, behind, vlog, preschool, pursue, subway, half, drum, dusk, microscope, one, toilet paper, schedule, sticky, listen, money, proof, penny, pay, comment, hello, relationship, cool, bother, between, door, hippopotamus, water, forgive, less, memorize, sore throat, stretch, tree, look for, activity, robot, hear, department, tough, blue, oral, pink, policeman, church, shrimp, motivate, couch, bottom, important, trouble, down, camping, ticket, honey, year, mosquito, win, cancel, gay, constitution, side, candle, sheep, shirt, impact, forest, detective, multiply, angel, shower, every, sweden, south america, improve, real, hold, sentence, chicken, brief, presentation, dragon, rent, dig, shy, research, tiger, evaluate, cookie, melt, have, body, europe, kangaroo, testify, restroom, morning, library, tonight, function, party, jealous, appetite, relief, stir, rich, salary, equal, family, obtain, out, allow, tranquil, fairy, cow, mad, resist, letter, cannot, compromise, confused, calculus, proud, serious, greece, television, blame, express, disconnect, nickel, safe, music, fool, overcome, doctor, hurt, wednesday, because, many, camp, provide, wake up, chemistry, god, bird, theme, bet, shopping, suffer, cheerleader, throw, sequence, backpack, alcohol, cochlear implant, lobster, argue, chapter, seem, festival, room, move, country, australia, cereal, authority, solve, recent, road, stink, eagle, turkey, clear, saturday, service, towel, awkward, review, spit, talent, yellow, decide, guide, helicopter, study, mine, and, dime, worse, dry, drawer, boss, in, where, wristwatch, all, september, wonder, perfume, that, ahead, professor, laugh, yourself, act, energy, chain, sprint, address, bridge, photographer, hour, slave, empty, island, city, cracker, leader, dining room, mom, asia, camel, beside, assist, dream, avoid, freeze, enough, complex, curse, interesting, change, former, power, microphone, paint, drag, everyday, community, skate, die, remember, unique, penalty, dessert, east, label, ruin, england, carrot, available, minute, soda, attend, conquer, curious, show, phrase, mistake, lord, german, mind, fact, pour, brain, coconut, downstairs, yesterday, precise, toothbrush, nose, waste, control, cabinet, sweetheart, guilty, thing, bracelet, sister, octopus, rat, speed, several, jacket, daily, tornado, roar, bike, chicago, transform, prince, priest, slow, surgeon, will, habit, bitter, gum, division, dinosaur, big, pilot, wind, create, interest, bathroom, almost, murder, bed, pure, from, lift, serve, singer, tennis, inspect, house, snob, sound, physics, yes, temperature, guess, zero, steal, switzerland, excited, establish, vegetable, present, short, few, information, baptize, four, tomato, cop, carnival, promote, scissors, captain, investigate, spread, chase, get up, stadium, scared, owl, lesson, our, sneeze, value, connect, contact, hard of hearing, violin, philosophy, point, background, meat, closet, debt, roommate, search, spring, very, drink, bark, triangle, weather, transfer, lightning, drug, soccer, propaganda, choir, blood, lose, shape, invite, socks, october, allergy, straw, sign, dinner, also, use, ghost, friend, list, earth, pick, bee, grandma, complain, prepare, wine, early, end, disturb, eraser, liability, like, skip, put, restaurant, role, gun, know, nothing, delay, puzzled, workshop, motor, race, either, new york, beg, butter, someday, blind, who, smart, vacant, butterfly, wear, umbrella, quarrel, approach, hearing, sauce, salute, raccoon, funeral, generation, two, home, shop, halloween, milk, therefore, fold, girl, person, need, onion, gorilla, winter, rely, circle, lousy, stand, dollar, boil, assume, eighteen, six, upset, draw, member, limit, commit, result, grow up, brother, introduce, everything, medicine, witness, fishing, can, engage, sunday, emergency, mother, public, wood, appreciate, assistant, sin, clever, microwave, africa, dentist, old, path, tobacco, often, nervous, repeat, black, face, grammar, polar bear, skill, enjoy, translate, seldom, children, why, beer, midnight, snow, with, army, rock, algebra, breakdown, arrive, admire, institute, sorry, herself, hamburger, bottle, sunrise, lipstick, reply, require, south, difficult, stupid, deliver, therapy, battery, kill, exchange, flag, prostitute, thermometer, spider, teacher, occur, advantage, aunt, week, peach, only, join, away, recommend, influence, degree, arrest, brag, tongue, cake, plant, pickle, you, there, disagree, practice, meeting, summer, iran, support, turtle, bowl, hearing aid, ignore, on, h, piano, grow, terrible, class, clothes, homework, machine, newspaper, science, event, independent, land, stop, diabetes, hug, neutral, expect, month, dumb, weekly, jump, progress, day, effort, quit, complete, book, radio, scotland, tall, hair, shout, taste, situation, explode, i, attitude, friday, visitor, hat, mouth, coffee, bless, scream, swing, individual, alone, during, every tuesday, court, stuck, relate, pressure, bell, amazing, place, calculate, adverb, choose, dizzy, wallet, reason, similar, surface, goal, decrease, engine, temple, train, lesbian, delicious, paragraph, priority, happy, king, area, struggle, pretty, team, apart, predict, dance, reduce, internet, watch, card, california, able, rough, final, preach, russia, bite, chop, freeway, email, appear, horse, joke, wish, true, understand, selfish, tradition, solid, mushroom, war, volleyball, me, dirty, journey, for, stomach, boots, k, add, arizona, a lot, preacher, necessary, spoon, desert, world, comma, duck, today, dog, flatter, deposit, defend, wrong, mature, depressed, popcorn, crush, silent, ten, recliner, destroy, rubber, fence, saw, pillow, category, mix, boat, trophy, truth, stay, drunk, asl, goodbye, correct, principal, whatever, paper, suspect, earring, committee, design, j, explain, work, since, suppose, gamble, rise, christian, dvd, suspend, sue, basement, shoulder, regular, twin, attorney, hospital, street, neighbor, queen, whale, kneel, grandmother, china, against, sing, buy, before, smoking, jewelry, tent, sympathy, rabbit, quiet, above, accomplish, diarrhea, nut, care, cheat, bowling, good, feed, receive, document, slip, responsible, check, plus, contribute, outside, key, cheap, order, touch, law, elephant, punish, spell, corn, certificate, come here, mechanic, speak, dolphin, sixteen, audience, fall in love, get, common sense, discount, jesus, analyze, cause, increase, potato, exact, librarian, telescope, abdomen, off, hurricane, cry, over, thin, sometimes, sugar, talk, brush, policy, n, perfect, store, rule, give up, them, catch, never, fun, town, deer, boyfriend, recover, host, standard, farm, suggest, volunteer, sad, potential, flute, question, lock, all day, ready, follow, psychologist, son, action, arm, up, each, cigarette, salt, bath, o, purchase, depend, engagement, gasoline, throat, apartment, build, announce, flirt, keyboard, post, parachute, give, olympics, recognize, appointment, after, north, careful, put off, already, curtain, relax, inspire, health, wide, burp, major, sleep, divide, pneumonia, awful, lion, sign language, theory, double, fire, promise, average, senior, different, gone, fingerspell, northwest, tell, opposite, enormous, river, soldier, size, inside, plenty, young, dark, teeth, tend, west, time, another, embarrass, experience, crazy, expand, angle, overwhelm, make, metal, later, title, loud, no, ok, bring, numerous, gray, same, they, admit, bookstore, adopt, then, m, democrat, desk, pound, discover, maximum, please, soul, tv, ask, continue, offer, future, joy, illegal, ball, dictionary, washington, silly, ceiling, polite, group, thanksgiving, cuba, deep, bread, shock, dirt, across, determine, french, senate, gallaudet, weird, procrastinate, proper, ago, bribe, approve, monthly, marry, attention, song, muscle, fly, number, parents, aid, shave, collect, worm, whistle, doubt, lend, once, school, bedroom, pocket, remote control, candy, rose, movie, leak, diploma, game, include, uncle, position, envelope, noon, narrow, lecture, clumsy, three, type, vote, travel
-```
+- **LM Studio not reachable:** confirm the local server is started and listening on port 1234.
+- **Missing spaCy model:** run `python -m spacy download en_core_web_md`.
+- **Clip not found:** the similarity fallback runs automatically; the console shows the substitute it chose.
 
-## 🐛 Troubleshooting
+## License
 
-### Common Issues
-
-1. **LM Studio not running**: Ensure LM Studio is running on localhost:1234
-2. **Missing spaCy model**: Run `python -m spacy download en_core_web_md`
-3. **Video not found**: The system will automatically search for similar signs
-4. **LLM not responding**: Check if the model is loaded in LM Studio
-
-### Performance Tips
-
-- Use a GPU-enabled LLM for faster response times
-- Ensure sufficient RAM for video playback
-- Close other applications to free up system resources
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- ASL video database contributors
-- LM Studio team for local LLM hosting
-- OpenCV community for computer vision tools
-- spaCy team for NLP capabilities
-
----
-
-**Note**: This system is designed for educational and accessibility purposes. For professional ASL interpretation, please consult certified interpreters.
+MIT, see [LICENSE](LICENSE).
